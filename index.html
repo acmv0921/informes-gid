@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Informes GID · SD-P03-F06</title><meta name="theme-color" content="#1F3864">
+<link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<style>:root{--bg:#f4f6fb;--card:#fff;--ink:#1b2438;--mut:#5b6785;--pri:#1F3864;--acc:#2f6fdb;--ok:#1e8e4e;--warn:#b8860b;--bad:#c0392b;--line:#d9deeb}
+@media (prefers-color-scheme:dark){:root{--bg:#10151f;--card:#1a2130;--ink:#e8ecf5;--mut:#9aa6c2;--pri:#8fb0ff;--acc:#6aa0ff;--line:#2a3350}}
+*{box-sizing:border-box}body{margin:0;font-family:'Trebuchet MS',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
+header{background:var(--pri);color:#fff;padding:10px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:5}
+@media (prefers-color-scheme:dark){header{background:#1a2650;color:#fff}}
+header h1{font-size:17px;margin:0;flex:1}header small{opacity:.8}
+.chip{font-size:12px;padding:3px 9px;border-radius:12px;background:rgba(255,255,255,.18)}
+nav{display:flex;gap:4px;overflow-x:auto;padding:8px 10px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:46px;z-index:4}
+nav button{border:0;background:transparent;color:var(--mut);padding:8px 12px;border-radius:8px;font:inherit;white-space:nowrap;cursor:pointer}
+nav button.on{background:var(--pri);color:#fff}
+main{max-width:980px;margin:0 auto;padding:14px 16px 80px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:0 0 14px}
+.card h2{margin:0 0 8px;font-size:16px;color:var(--pri)}.card h3{margin:12px 0 6px;font-size:14px}
+label{display:block;font-size:12px;color:var(--mut);margin:8px 0 3px}
+input,select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px}
+textarea{min-height:90px;resize:vertical}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+button.b{font:inherit;border:1px solid var(--pri);background:var(--pri);color:#fff;padding:9px 14px;border-radius:9px;cursor:pointer;margin:4px 6px 4px 0}
+button.b.s{background:transparent;color:var(--pri)}button.b.sm{padding:4px 9px;font-size:12px}button.b.d{border-color:var(--bad);color:var(--bad);background:transparent}
+button.b:disabled{opacity:.5}
+.blk{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:8px 0;background:var(--bg)}
+.blk .h{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--mut)}
+.blk .h b{color:var(--pri);flex:1}
+.pend{outline:2px solid var(--warn)}
+.chk label{display:flex;gap:8px;align-items:flex-start;font-size:14px;color:var(--ink);margin:6px 0}.chk input{width:auto;margin-top:3px}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.th{border:1px solid var(--line);border-radius:8px;padding:4px;font-size:11px;background:var(--bg)}.th img{width:100%;height:90px;object-fit:contain;display:block}
+.note{font-size:13px;color:var(--mut)}.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;font-size:13px}
+#log{max-height:220px;overflow:auto}
+.hide{display:none}
+</style></head><body>
+<header><h1>Informes forenses GID <small>SD-P03-F06 · F82</small></h1><span class="chip" id="chip">Motor: sin cargar</span></header>
+<nav id="nav"></nav><main id="main"></main>
+<script>'use strict';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const PYODIDE='https://cdn.jsdelivr.net/pyodide/v0.26.4/full/';
+const TXT_TYPES={sub:'Subtítulo (6.x)',body:'Párrafo',list:'Viñeta/lista',bold:'Título en negrita',norm:'Normatividad (encabezado)',law:'Norma (encabezado)',ital:'Cita en cursiva',blank:'Línea en blanco',img:'Imagen / plano',pair:'Dos imágenes lado a lado',table:'Tabla'};
+const SECS=[['resultados','Resultados (numeral 6)'],['interpretacion','Interpretación de resultados']];
+let S=newState();
+function newState(){return {tipo:'inmuebles',chk:{},mt:'',informe:'',fecha:new Date().toISOString().slice(0,10),spoa:'',delito:'',usuario:'',osndp:{nombre:'',depto:'Valle del Cauca',tel:'',email:''},supervisor:'',labores:[''],nota:'',lugar:'',instrumentos:['','','','',''],metodologia:'',insumos:['','',''],resultados:[],interpretacion:[],conclusiones:[],anexos:[],imgs:{},gpx:[],cfg:{}};}
+let PRESETS=null,ENG=null,TAB='asist';
+/* ---------- registro ---------- */
+function log(m,c){const l=$('#log');if(!l)return;const d=document.createElement('div');d.className=c||'';d.textContent=new Date().toLocaleTimeString()+'  '+m;l.prepend(d);}
+/* ---------- persistencia (IndexedDB, con respaldo localStorage solo para ajustes) ---------- */
+function idb(){return new Promise((res,rej)=>{try{const r=indexedDB.open('informes-gid',1);r.onupgradeneeded=()=>r.result.createObjectStore('casos');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);}catch(e){rej(e);}});}
+async function idbPut(k,v){try{const db=await idb();return await new Promise((res,rej)=>{const t=db.transaction('casos','readwrite');t.objectStore('casos').put(v,k);t.oncomplete=res;t.onerror=()=>rej(t.error);});}catch(e){log('No se pudo guardar en el equipo: '+e,'warn');}}
+async function idbGet(k){try{const db=await idb();return await new Promise((res,rej)=>{const r=db.transaction('casos').objectStore('casos').get(k);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}catch(e){return null;}}
+async function idbAll(){try{const db=await idb();return await new Promise((res,rej)=>{const r=db.transaction('casos').objectStore('casos').getAllKeys();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}catch(e){return [];}}
+async function idbDel(k){try{const db=await idb();db.transaction('casos','readwrite').objectStore('casos').delete(k);}catch(e){}}
+let saveT=null;function dirty(){clearTimeout(saveT);saveT=setTimeout(()=>{idbPut('actual',S);if(S.mt)idbPut('caso:'+S.mt,S);},700);}
+function cfgGet(k,d){try{return localStorage.getItem('gid_'+k)||d;}catch(e){return d;}}
+function cfgSet(k,v){try{localStorage.setItem('gid_'+k,v);}catch(e){}}
+/* ---------- formato numérico ---------- */
+const nf=(x,d)=>x.toFixed(d).replace('.',',').replace('-','−');
+function dms(v,pos,neg){const a=Math.abs(v),g=Math.floor(a),m=Math.floor((a-g)*60),s=(a-g-m/60)*3600;return g+'°'+m+"'"+s.toFixed(2)+'" '+(v>=0?pos:neg);}
+function hav(a,b){const R=6371000,r=Math.PI/180,dl=(b.lat-a.lat)*r,dn=(b.lon-a.lon)*r;const h=Math.sin(dl/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h));}
+function az(a,b){const r=Math.PI/180,y=Math.sin((b.lon-a.lon)*r)*Math.cos(b.lat*r),x=Math.cos(a.lat*r)*Math.sin(b.lat*r)-Math.sin(a.lat*r)*Math.cos(b.lat*r)*Math.cos((b.lon-a.lon)*r);return (Math.atan2(y,x)/r+360)%360;}
+function rumbo(d){return ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'][Math.round(d/22.5)%16];}
+/* ---------- GPX ---------- */
+function parseGPX(txt){const x=new DOMParser().parseFromString(txt,'application/xml');if(x.querySelector('parsererror'))throw new Error('GPX inválido');const out=[];
+ x.querySelectorAll('wpt').forEach(w=>{const e=w.querySelector('ele'),n=w.querySelector('name'),t=w.querySelector('time');out.push({name:n?n.textContent:'Punto',lat:+w.getAttribute('lat'),lon:+w.getAttribute('lon'),ele:e?+e.textContent:null,time:t?t.textContent:'',use:true,src:'GPS Garmin'});});
+ if(!out.length)throw new Error('El GPX no trae waypoints (wpt). Los tracks no se convierten en tabla.');return out;}
+function gpxBlocks(){const pts=S.gpx.filter(p=>p.use);if(pts.length<1)return [];const alt=$('#gAlt')&&$('#gAlt').checked;
+ const key=n=>'g'+n;const hdr=['Punto','Fuente'].concat(['Lat. (°)','Long. (°)']).concat(alt?['Alt. (m)']:[]);
+ const rows=pts.map(p=>[p.name,p.src+(p.time?', '+p.time.slice(0,10).split('-').reverse().join('/'):'')].concat([nf(p.lat,6),nf(p.lon,6)]).concat(alt?[p.ele==null?'—':Math.round(p.ele)]:[]));
+ const w=alt?[3.6,6.2,2.2,2.6,2.0]:[4.2,7.4,2.6,2.8];
+ const cap='Coordenadas WGS84. '+pts.map(p=>p.name+': '+dms(p.lat,'N','S')+' – '+dms(p.lon,'E','O')).join('; ')+'.'+(alt?'':' No se reportan altitudes: el receptor opera sin corrección RTK y la altitud autónoma no es confiable.');
+ const out=[{t:'body',text:'Coordenadas registradas (WGS84):'},{t:'table',key:'tc',title:'Coordenadas de los puntos de campo (GPX)',header:hdr,rows:rows,widths:w,center_from:2,caption:cap}];
+ if(pts.length>1){const pr=[];const all=pts.length<=5;for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){if(!all&&j!==i+1)continue;pr.push([pts[i].name+' → '+pts[j].name,nf(hav(pts[i],pts[j]),1),nf(az(pts[i],pts[j]),1)+'° ('+rumbo(az(pts[i],pts[j]))+')']);}
+  out.push({t:'body',text:'Con las coordenadas se calcularon las distancias de la {{td}} (fórmula de Haversine, esfera de radio 6 371 km). Son distancias de navegación de receptores de uso general, con incertidumbre del orden de varios metros, por lo que se reportan como aproximadas.'},{t:'blank'},{t:'table',key:'td',title:'Distancias entre los puntos georreferenciados',header:['Tramo','Distancia (m)','Azimut'],rows:pr,widths:[8.4,3.6,3.6],center_from:1,caption:'Distancias horizontales calculadas a partir de la {{tc}}.'});}
+ return out;}
+/* ---------- imágenes ---------- */
+function loadImg(file,maxd){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{let w=im.naturalWidth,h=im.naturalHeight,k=Math.min(1,maxd/Math.max(w,h));const c=document.createElement('canvas');c.width=Math.round(w*k);c.height=Math.round(h*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);res({data:c.toDataURL('image/jpeg',0.86),w:c.width,h:c.height});};im.onerror=()=>rej(new Error('No se pudo leer '+file.name));im.src=u;});}
+function rotImg(name){const it=S.imgs[name];return new Promise(res=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=im.naturalHeight;c.height=im.naturalWidth;const x=c.getContext('2d');x.translate(c.width,0);x.rotate(Math.PI/2);x.drawImage(im,0,0);it.data=c.toDataURL('image/jpeg',0.86);it.w=c.width;it.h=c.height;res();};im.src=it.data;});}
+async function addImgs(files){for(const f of files){try{if(!/^image\//.test(f.type)){log('Omitido (no es imagen): '+f.name,'warn');continue;}const r=await loadImg(f,2200);let n=Object.keys(S.imgs).length+1,k;do{k='img'+String(n++).padStart(2,'0')+'.jpg';}while(S.imgs[k]);S.imgs[k]={name:f.name,data:r.data,w:r.w,h:r.h};}catch(e){log(String(e),'bad');}}dirty();render();}
+/* ---------- numeración (igual al motor) ---------- */
+function numbering(){const m={};let ni=0,nt=0,np=0;[...S.resultados,...S.interpretacion].forEach(b=>{if(b.t==='img'){let l;if(b.kind==='plano'){np++;l='Plano N°'+np;}else{ni++;l='Imagen N°'+String(ni).padStart(2,'0');}b._l=l;}else if(b.t==='pair'){b.items.forEach(it=>{ni++;it._l='Imagen N°'+String(ni).padStart(2,'0');});}else if(b.t==='table'){nt++;b._l='Tabla N°'+String(nt).padStart(2,'0');}});}
+/* ---------- spec para el motor ---------- */
+function ensureKeys(){let a=0,b=0,c=0;[...S.resultados,...S.interpretacion].forEach(bl=>{if(bl.t==='img'){if(!bl.key)bl.key=(bl.kind==='plano'?'p':'i')+'_a'+(++a);}else if(bl.t==='pair'){bl.items.forEach(it=>{if(!it.key)it.key='i_b'+(++b);});}else if(bl.t==='table'){if(!bl.key)bl.key='t_c'+(++c);}});}
+function tableOut(b){const header=(b.hdrTxt!=null?b.hdrTxt.split('|').map(s=>s.trim()):b.header)||[];const rows=(b.rowsTxt!=null?b.rowsTxt.split('\n').filter(l=>l.trim()).map(l=>l.split('|').map(s=>s.trim())):b.rows)||[];let w=b.widthsTxt?b.widthsTxt.split(/[ ,;]+/).map(Number).filter(x=>x>0):b.widths;if(!w||w.length!==header.length)w=header.map(()=>+(16.6/header.length).toFixed(2));
+ return {t:'table',key:b.key,title:b.title||'',caption:b.caption||'',header,rows:rows.map(r=>header.map((_,i)=>r[i]||'')),widths:w,center_from:b.center_from==null||b.center_from===''?null:+b.center_from};}
+function blockOut(b){if(b.t==='img')return {t:'img',key:b.key,kind:b.kind||'imagen',file:b.file,width:+((b.wcm||16.6)/2.54).toFixed(3),caption:b.caption||'',title:b.title||''};
+ if(b.t==='pair')return {t:'pair',items:b.items.map(i=>({key:i.key,file:i.file,caption:i.caption||'',width:+((i.wcm||7.7)/2.54).toFixed(3),title:i.title||''}))};
+ if(b.t==='table')return tableOut(b);return {t:b.t,text:b.text||''};}
+function specOut(){ensureKeys();const f=S.fecha.split('-');return {mt:S.mt.trim(),informe:S.informe.trim()||(S.mt.trim()+'-01'),fecha:{y:+f[0],m:+f[1],d:+f[2]},spoa:S.spoa,delito:S.delito,usuario:S.usuario.toUpperCase(),osndp:S.osndp,supervisor:S.supervisor,labores:S.labores.filter(x=>x.trim()),nota:S.nota,lugar:S.lugar,instrumentos:S.instrumentos,metodologia:S.metodologia,insumos:S.insumos,resultados:S.resultados.map(blockOut),interpretacion:S.interpretacion.map(blockOut),conclusiones:S.conclusiones,anexos:S.anexos.filter(x=>x.trim())};}
+function pending(){const sp=JSON.stringify(specOut());const m=sp.match(/\[\[[^\]]*\]\]/g)||[];return m;}
+function validate(){const e=[];if(!/^\d{4}-\d{5}$/.test(S.mt.trim()))e.push('N° de misión con formato AAAA-NNNNN (p. ej. 2026-00581).');if(!/^\d{4}-\d{5}-\d{2}$/.test((S.informe||S.mt+'-01').trim()))e.push('N° de informe con formato AAAA-NNNNN-NN.');if(S.spoa.replace(/\D/g,'').length!==21)e.push('El SPOA (CUI) debe tener 21 dígitos; hoy tiene '+S.spoa.replace(/\D/g,'').length+'.');if(!S.usuario.trim())e.push('Falta el nombre del usuario.');if(!S.osndp.nombre.trim())e.push('Falta el O.S.N.D.P.');if(!S.fecha)e.push('Falta la fecha.');
+ const used=new Set();[...S.resultados,...S.interpretacion].forEach(b=>{if(b.t==='img'&&b.file)used.add(b.file);if(b.t==='pair')b.items.forEach(i=>i.file&&used.add(i.file));});[...S.resultados,...S.interpretacion].forEach(b=>{if(b.t==='img'&&!S.imgs[b.file])e.push('Un bloque de imagen no tiene imagen válida.');if(b.t==='pair'&&b.items.some(i=>!S.imgs[i.file]))e.push('Un par de imágenes tiene una imagen sin cargar.');});
+ return e;}
+/* ---------- motor Pyodide ---------- */
+function setChip(t,c){const e=$('#chip');if(e){e.textContent=t;e.style.background=c||'';}}
+async function loadScript(u){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=u;s.onload=res;s.onerror=()=>rej(new Error('No se pudo cargar '+u));document.head.appendChild(s);});}
+async function engine(){if(ENG)return ENG;setChip('Motor: cargando…','#b8860b');log('Cargando Pyodide (primera vez ~10-30 s; luego queda en caché)…');
+ try{await loadScript(PYODIDE+'pyodide.js');const py=await loadPyodide({indexURL:PYODIDE});log('Pyodide '+py.version+' listo; instalando lxml y python-docx…');
+  await py.loadPackage(['lxml','typing-extensions']);
+  const w=await fetch('wheels/python_docx-1.2.0-py3-none-any.whl');if(!w.ok)throw new Error('wheel python-docx: HTTP '+w.status);
+  await py.unpackArchive(await w.arrayBuffer(),'wheel');
+  const e=await fetch('py/engine.py');if(!e.ok)throw new Error('engine.py: HTTP '+e.status);
+  py.FS.writeFile('/home/pyodide/engine.py',await e.text());py.runPython("import sys\nif '/home/pyodide' not in sys.path: sys.path.insert(0,'/home/pyodide')\nimport engine");
+  ENG=py;setChip('Motor: listo','#1e8e4e');log('Motor de generación listo.','ok');return ENG;}
+ catch(err){setChip('Motor: error','#c0392b');log('Error del motor: '+err.message,'bad');throw err;}}
+async function tplB64(n){const r=await fetch('tpl/'+n);if(!r.ok)throw new Error(n+': HTTP '+r.status);const b=new Uint8Array(await r.arrayBuffer());let s='';for(let i=0;i<b.length;i+=0x8000)s+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(s);}
+function b64Blob(b64){const bin=atob(b64),a=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return new Blob([a],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});}
+function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);}
+function fname(k){const sp=specOut();return 'SD-P03-'+k+'_MT'+sp.mt+'_'+sp.usuario.replace(/[^A-ZÁÉÍÓÚÑ ]/g,'').trim().replace(/ +/g,'_')+(k==='F06'?'_INFORME_'+sp.informe:'')+'.docx';}
+async function genF06(){const er=validate();if(er.length){log('Faltan datos: '+er.join(' | '),'bad');alert('Faltan datos:\n- '+er.join('\n- '));return;}const pd=pending();if(pd.length&&!confirm('Hay '+pd.length+' campos pendientes [[…]] sin completar. ¿Generar de todos modos?'))return;
+ const py=await engine();log('Generando F06…');const spec=specOut();const imgs={};Object.keys(S.imgs).forEach(k=>imgs[k]=S.imgs[k].data.split(',')[1]);
+ try{numbering();const tb=await tplB64('F06_base.docx');const out=py.globals.get('engine').run_f06(tb,JSON.stringify(spec),py.toPy(imgs));dl(b64Blob(out),fname('F06'));log('F06 generado.','ok');}catch(e){log('Error generando F06: '+e,'bad');alert('Error generando el F06:\n'+e);}}
+async function genF82(){const sp=specOut();if(!/^\d{4}-\d{5}$/.test(sp.mt)){alert('Falta el N° de misión.');return;}const py=await engine();log('Generando F82…');
+ try{const tb=await tplB64('F82_base.docx');const out=py.globals.get('engine').run_f82(tb,JSON.stringify(sp));dl(b64Blob(out),fname('F82'));log('F82 generado.','ok');}catch(e){log('Error generando F82: '+e,'bad');alert('Error generando el F82:\n'+e);}}
+/* ---------- correo ---------- */
+function emailText(){const sp=specOut();const d=S.delito||'[delito]';const l=cfgGet('encuesta','[enlace de la encuesta del GID]');
+ return {asunto:'Revisión y entrega de informe '+sp.informe+'. Usuario: '+sp.usuario,
+ cuerpo:'Doctor\nHernando Ordóñez Ramírez\nProfesional Administrativo y de Gestión G19\nDefensoría del Pueblo Regional Valle del Cauca\n\nCordial saludo\n\nRespetuosamente le remito el informe correspondiente a la MISIÓN DE TRABAJO No. '+sp.mt+', SPOA: '+S.spoa.replace(/\D/g,'')+'. Delito: '+d+', donde figura como usuario: '+sp.usuario+'.\n\nSe envía copia a la O.S.N.D.P. '+S.osndp.nombre+'.\n\nSr. O.S.N.D.P. por favor diligencie esta encuesta para medir el grado de satisfacción respecto al servicio que presta el Grupo de Investigación para la Defensa en todo el país, a través del siguiente enlace: '+l+'\n\nABDIEL CICAR MORENO VELÁSQUEZ\nPerito Topógrafo - Balístico\nTécnico Criminalístico G-15\nDefensoría del Pueblo'};}
+/* ---------- editor de bloques ---------- */
+function opts(list,cur,k){return list.map(x=>'<option value="'+esc(x[0])+'"'+(x[0]===cur?' selected':'')+'>'+esc(x[1])+'</option>').join('');}
+function imgOpts(cur){return '<option value="">— elegir imagen —</option>'+Object.keys(S.imgs).map(k=>'<option value="'+k+'"'+(k===cur?' selected':'')+'>'+k+' · '+esc(S.imgs[k].name)+'</option>').join('');}
+function blockHTML(sec,i,b){const hasP=JSON.stringify(b).includes('[[');const lab=b._l?' · '+b._l:'';let body='';
+ if(b.t==='blank')body='<div class="note">Línea en blanco.</div>';
+ else if(['sub','body','list','bold','norm','law','ital'].includes(b.t))body='<textarea data-f="text" rows="'+Math.min(10,Math.max(2,Math.ceil((b.text||'').length/110)))+'">'+esc(b.text)+'</textarea>';
+ else if(b.t==='img')body='<div class="row"><div><label>Imagen</label><select data-f="file">'+imgOpts(b.file)+'</select></div><div><label>Tipo</label><select data-f="kind">'+opts([['imagen','Imagen (fotografía/mapa)'],['plano','Plano']],b.kind||'imagen')+'</select></div><div><label>Ancho (cm; 16,6 = marco completo)</label><input data-f="wcm" type="number" step="0.1" value="'+(b.wcm||16.6)+'"></div><div><label>Clave para {{referencia}}</label><input data-f="key" value="'+esc(b.key||'')+'"></div></div><label>Pie de imagen</label><textarea data-f="caption" rows="2">'+esc(b.caption)+'</textarea><label>Título corto (lista de figuras)</label><input data-f="title" value="'+esc(b.title||'')+'">';
+ else if(b.t==='pair')body=b.items.map((it,j)=>'<div class="row" data-j="'+j+'"><div><label>Imagen '+(j+1)+'</label><select data-f="file">'+imgOpts(it.file)+'</select></div><div><label>Ancho (cm)</label><input data-f="wcm" type="number" step="0.1" value="'+(it.wcm||7.7)+'"></div><div><label>Clave</label><input data-f="key" value="'+esc(it.key||'')+'"></div></div><label>Pie</label><input data-f="caption" value="'+esc(it.caption)+'" data-j="'+j+'">').join('');
+ else if(b.t==='table'){const hd=b.hdrTxt!=null?b.hdrTxt:(b.header||[]).join(' | '),rw=b.rowsTxt!=null?b.rowsTxt:(b.rows||[]).map(r=>r.join(' | ')).join('\n'),wd=b.widthsTxt!=null?b.widthsTxt:(b.widths||[]).join(', ');
+  body='<div class="row"><div><label>Título</label><input data-f="title" value="'+esc(b.title||'')+'"></div><div><label>Clave {{referencia}}</label><input data-f="key" value="'+esc(b.key||'')+'"></div><div><label>Anchos (cm, separados por coma)</label><input data-f="widthsTxt" value="'+esc(wd)+'"></div><div><label>Centrar desde la columna (0…)</label><input data-f="center_from" value="'+esc(b.center_from==null?'':b.center_from)+'"></div></div><label>Encabezado (columnas separadas por |)</label><input data-f="hdrTxt" value="'+esc(hd)+'"><label>Filas (una por línea, celdas separadas por |)</label><textarea data-f="rowsTxt" rows="6">'+esc(rw)+'</textarea><label>Pie de tabla</label><textarea data-f="caption" rows="2">'+esc(b.caption)+'</textarea>';}
+ return '<div class="blk'+(hasP?' pend':'')+'" data-s="'+sec+'" data-i="'+i+'"><div class="h"><b>'+esc(TXT_TYPES[b.t]||b.t)+esc(lab)+(hasP?' · ⚠ pendiente':'')+'</b><button class="b s sm" data-a="up">↑</button><button class="b s sm" data-a="dn">↓</button><button class="b d sm" data-a="del">Eliminar</button></div>'+body+'</div>';}
+function addBar(sec){return '<div class="card"><label>Agregar bloque</label><div class="row"><select id="add_'+sec+'">'+Object.keys(TXT_TYPES).map(k=>'<option value="'+k+'">'+TXT_TYPES[k]+'</option>').join('')+'</select><div><button class="b s" data-add="'+sec+'">Agregar al final</button></div></div></div>';}
+function newBlock(t){if(t==='img')return {t,kind:'imagen',file:'',wcm:16.6,caption:'',title:''};if(t==='pair')return {t,items:[{file:'',wcm:7.7,caption:''},{file:'',wcm:7.7,caption:''}]};if(t==='table')return {t,title:'',caption:'',hdrTxt:'Elemento | Medida | Observación',rowsTxt:'',widthsTxt:'7, 3.4, 6.2'};return {t,text:''};}
+/* ---------- vistas ---------- */
+function field(label,path,type,ph){return '<label>'+label+'</label><input data-p="'+path+'" type="'+(type||'text')+'" placeholder="'+esc(ph||'')+'" value="'+esc(getp(path))+'">';}
+function area(label,path,rows){return '<label>'+label+'</label><textarea data-p="'+path+'" rows="'+(rows||4)+'">'+esc(getp(path))+'</textarea>';}
+function getp(p){return p.split('.').reduce((o,k)=>o==null?o:o[k],S);}
+function setp(p,v){const k=p.split('.'),l=k.pop();const o=k.reduce((o,x)=>o[x],S);o[l]=v;}
+function vAsist(){const P=PRESETS;const t=P[S.tipo];return '<div class="card"><h2>1. Tipo de diligencia</h2><select id="tipo">'+Object.keys(P).map(k=>'<option value="'+k+'"'+(k===S.tipo?' selected':'')+'>'+esc(P[k].nombre)+'</option>').join('')+'</select><p class="note">Cada tipo trae una plantilla de contenido con campos <b>[[pendientes]]</b> que debes completar. Las plantillas de tránsito, GPS y dron son esqueletos: pásame el informe de referencia para afinarlas.</p><button class="b" id="aplicar">Aplicar plantilla al informe</button></div>'
+ +'<div class="card chk"><h2>2. Insumos que debes tener (lista de verificación)</h2>'+t.checklist.map((c,i)=>'<label><input type="checkbox" data-chk="'+S.tipo+i+'"'+(S.chk[S.tipo+i]?' checked':'')+'><span>'+esc(c)+'</span></label>').join('')+'<p class="note">Regla vigente: en el ANEXO solo se enumeran los planos (no GPX ni otros archivos); los croquis de campo no se anexan salvo que lo indiques; los planos propios van dentro del informe a todo el ancho del marco, descritos en detalle (especialmente la cercanía entre habitaciones).</p></div>'
+ +'<div class="card"><h2>3. Casos guardados en este equipo</h2><div id="casos" class="note">…</div></div>';}
+function vCaso(){return '<div class="card"><h2>Datos del caso</h2><div class="row"><div>'+field('N° de misión (AAAA-NNNNN)','mt','text','2026-00581')+'</div><div>'+field('N° de informe','informe','text','2026-00581-01')+'</div><div>'+field('Fecha del informe','fecha','date')+'</div></div><div class="row"><div>'+field('SPOA / CUI (21 dígitos)','spoa','text','196986000633202500499')+'</div><div>'+field('Delito','delito')+'</div></div>'+field('Usuario (nombre completo)','usuario')+'</div><div class="card"><h2>O.S.N.D.P. y supervisor</h2><div class="row"><div>'+field('O.S.N.D.P. (con «Dra./Dr.»)','osndp.nombre')+'</div><div>'+field('Departamento','osndp.depto')+'</div><div>'+field('Teléfono','osndp.tel')+'</div><div>'+field('Correo del O.S.N.D.P.','osndp.email','email')+'</div></div>'+field('Supervisor del O.S.N.D.P.','supervisor')+'</div><div class="card"><h2>Labores solicitadas (transcripción literal de la MT)</h2><textarea id="labores" rows="6">'+esc(S.labores.join('\n\n'))+'</textarea><p class="note">Separa cada labor con una línea en blanco (máximo 4).</p></div>';}
+function vInsumos(){const g=S.gpx;return '<div class="card"><h2>Fotografías, planos y mapas</h2><p class="note">Se reducen y comprimen en tu equipo (no se suben a ningún servidor). Luego las insertas en la pestaña Contenido.</p><input type="file" id="fimg" accept="image/*" multiple><div class="thumbs" style="margin-top:10px">'+Object.keys(S.imgs).map(k=>'<div class="th"><img src="'+S.imgs[k].data+'"><div>'+k+'<br>'+esc(S.imgs[k].name)+'</div><button class="b s sm" data-rot="'+k+'">Girar 90°</button><button class="b d sm" data-rm="'+k+'">Quitar</button></div>').join('')+'</div></div>'
+ +'<div class="card"><h2>Archivo GPX (GPS Garmin)</h2><input type="file" id="fgpx" accept=".gpx,application/gpx+xml,text/xml"><p class="note">Se leen los waypoints. Se generan la tabla de coordenadas y la de distancias/azimut (Haversine) en Resultados.</p>'
+ +(g.length?'<table style="width:100%;font-size:13px"><tr><th></th><th>Nombre</th><th>Lat</th><th>Lon</th><th>Alt</th><th>Fuente</th></tr>'+g.map((p,i)=>'<tr><td><input type="checkbox" data-gu="'+i+'"'+(p.use?' checked':'')+'></td><td><input data-gn="'+i+'" value="'+esc(p.name)+'"></td><td>'+nf(p.lat,6)+'</td><td>'+nf(p.lon,6)+'</td><td>'+(p.ele==null?'—':Math.round(p.ele))+'</td><td><input data-gs="'+i+'" value="'+esc(p.src)+'"></td></tr>').join('')+'</table><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="gAlt" style="width:auto">¿El GPS tuvo corrección RTK? (solo entonces se incluye la altitud)</label><button class="b" id="gIns">Insertar tablas en Resultados</button>':'')+'</div>';}
+function vContenido(){numbering();return '<div class="card"><h2>Metodología, nota y lugar</h2>'+area('Nota metodológica','nota',4)+area('Lugar y fecha de la diligencia','lugar',6)+area('Metodología','metodologia',3)+'<h3>Instrumentos (5)</h3>'+S.instrumentos.map((_,i)=>area('Instrumento '+(i+1),'instrumentos.'+i,2)).join('')+'<h3>Insumos (3)</h3>'+S.insumos.map((_,i)=>area('Insumo '+(i+1),'insumos.'+i,3)).join('')+'</div>'
+ +SECS.map(([sec,tt])=>'<div class="card"><h2>'+tt+'</h2><p class="note">Referencias cruzadas: escribe {{clave}} (de una imagen o tabla), {{osndp}}, {{usuario}}, {{mt}} o {{informe}}; el motor las reemplaza por «Imagen N°…», «Tabla N°…», etc.</p>'+S[sec].map((b,i)=>blockHTML(sec,i,b)).join('')+'</div>'+addBar(sec)).join('')
+ +'<div class="card"><h2>Conclusiones</h2>'+S.conclusiones.map((c,i)=>'<div class="blk" data-c="'+i+'"><div class="h"><b>'+esc(c.label)+'</b><button class="b d sm" data-cdel="'+i+'">Eliminar</button></div><textarea data-ct="'+i+'" rows="4">'+esc(c.text)+'</textarea></div>').join('')+'<button class="b s" id="cadd">Agregar conclusión</button></div>'
+ +'<div class="card"><h2>Anexos (solo se enumeran los planos)</h2><textarea id="anexos" rows="4">'+esc(S.anexos.join('\n'))+'</textarea><p class="note">Una línea por anexo.</p></div>';}
+function vGen(){const er=validate(),pd=pending();return '<div class="card"><h2>Revisión previa</h2>'+(er.length?'<p class="bad">'+er.map(esc).join('<br>')+'</p>':'<p class="ok">Datos obligatorios completos.</p>')+(pd.length?'<p class="warn">'+pd.length+' campos pendientes [[…]]: '+esc(pd.slice(0,6).join(' · '))+(pd.length>6?' …':'')+'</p>':'<p class="ok">Sin campos pendientes.</p>')+'<p class="note">Al abrir el .docx en Word, acepta «actualizar campos» para que las listas de figuras y tablas muestren sus páginas. Revisa el marco y el cajetín página por página antes de enviar.</p></div>'
+ +'<div class="card"><h2>Generar</h2><button class="b" id="g06">Generar F06 (.docx)</button><button class="b" id="g82">Generar F82 (.docx)</button><button class="b s" id="gBoth">Ambos</button></div>'
+ +'<div class="card"><h2>Correo de entrega</h2>'+'<label>Enlace de la encuesta del GID (se guarda en este equipo)</label><input id="enc" value="'+esc(cfgGet('encuesta',''))+'" placeholder="https://…"><pre id="mail"></pre><button class="b s" id="cpMail">Copiar texto</button><p class="note">Adjuntos: F06 en PDF, F82 en PDF y planos/mapa en PDF. Para: GID VALLE – Misiones Valle del Cauca; copia al O.S.N.D.P.</p></div>'
+ +'<div class="card"><h2>Copia de seguridad</h2><button class="b s" id="exp">Exportar paquete del caso (.json)</button> <label style="display:inline-block"><input type="file" id="imp" accept=".json" style="display:none"><span class="b s" style="display:inline-block;border:1px solid var(--pri);border-radius:9px;padding:9px 14px;cursor:pointer">Importar paquete</span></label></div>'
+ +'<div class="card"><h2>Registro</h2><div id="log"></div></div>';}
+/* ---------- render y eventos ---------- */
+const TABS=[['asist','Asistente'],['caso','Caso'],['ins','Insumos'],['cont','Contenido'],['gen','Generar']];
+function render(){const m=$('#main');const y=window.scrollY;m.innerHTML=({asist:vAsist,caso:vCaso,ins:vInsumos,cont:vContenido,gen:vGen})[TAB]();$('#nav').innerHTML=TABS.map(t=>'<button data-tab="'+t[0]+'" class="'+(t[0]===TAB?'on':'')+'">'+t[1]+'</button>').join('');window.scrollTo(0,y);if(TAB==='asist')listCasos();if(TAB==='gen')refreshMail();}
+function refreshMail(){const e=$('#mail');if(!e)return;try{const m=emailText();e.textContent='Asunto: '+m.asunto+'\n\n'+m.cuerpo;}catch(x){e.textContent='Completa el caso para generar el correo.';}}
+async function listCasos(){const k=(await idbAll()).filter(x=>String(x).startsWith('caso:'));const e=$('#casos');if(!e)return;e.innerHTML=k.length?k.map(x=>'<button class="b s sm" data-open="'+esc(x)+'">'+esc(String(x).slice(5))+'</button><button class="b d sm" data-delc="'+esc(x)+'">×</button>').join(' '):'Aún no hay casos guardados.';}
+function applyPreset(){const p=PRESETS[S.tipo];if(S.resultados.length&&!confirm('Esto reemplaza el contenido actual de Resultados, Interpretación y Conclusiones. ¿Continuar?'))return;const c=JSON.parse(JSON.stringify(p));['labores','nota','lugar','instrumentos','metodologia','insumos','resultados','interpretacion','conclusiones','anexos'].forEach(k=>{if(k==='labores'&&S.labores.some(x=>x.trim()))return;S[k]=c[k];});dirty();log('Plantilla «'+p.nombre+'» aplicada.','ok');TAB='caso';render();}
+document.addEventListener('click',async ev=>{const t=ev.target.closest('button,[data-tab]');if(!t)return;const d=t.dataset;
+ if(d.tab){TAB=d.tab;render();return;}
+ if(t.id==='aplicar'){applyPreset();return;}
+ if(d.a){const b=t.closest('.blk'),s=b.dataset.s,i=+b.dataset.i,a=S[s];if(d.a==='del'){a.splice(i,1);}else if(d.a==='up'&&i>0){[a[i-1],a[i]]=[a[i],a[i-1]];}else if(d.a==='dn'&&i<a.length-1){[a[i+1],a[i]]=[a[i],a[i+1]];}dirty();render();return;}
+ if(d.add){const s=d.add;S[s].push(newBlock($('#add_'+s).value));dirty();render();return;}
+ if(t.id==='cadd'){const L=['PRIMERA:','SEGUNDA:','TERCERA:','CUARTA:','QUINTA:','SEXTA:','SÉPTIMA:','OCTAVA:'];S.conclusiones.push({label:L[S.conclusiones.length]||'NUEVA:',text:''});dirty();render();return;}
+ if(d.cdel!=null){S.conclusiones.splice(+d.cdel,1);dirty();render();return;}
+ if(d.rot){await rotImg(d.rot);dirty();render();return;}
+ if(d.rm){if(confirm('¿Quitar la imagen?')){delete S.imgs[d.rm];dirty();render();}return;}
+ if(t.id==='gIns'){const bl=gpxBlocks();if(!bl.length){alert('Selecciona al menos un punto.');return;}S.resultados.push(...bl);dirty();log('Tablas del GPX insertadas al final de Resultados; reordénalas en Contenido.','ok');TAB='cont';render();return;}
+ if(t.id==='g06'){genF06();return;}if(t.id==='g82'){genF82();return;}if(t.id==='gBoth'){await genF06();await genF82();return;}
+ if(t.id==='cpMail'){const m=emailText();try{await navigator.clipboard.writeText('Asunto: '+m.asunto+'\n\n'+m.cuerpo);log('Texto del correo copiado.','ok');}catch(e){log('No se pudo copiar; selecciónalo manualmente.','warn');}return;}
+ if(t.id==='exp'){const b=new Blob([JSON.stringify(S)],{type:'application/json'});dl(b,'caso_MT'+(S.mt||'sin-numero')+'.json');return;}
+ if(d.open){const v=await idbGet(d.open);if(v){S=Object.assign(newState(),v);TAB='caso';render();}return;}
+ if(d.delc){if(confirm('¿Borrar este caso del equipo?')){await idbDel(d.delc);listCasos();}return;}
+});
+document.addEventListener('input',ev=>{const t=ev.target;
+ if(t.dataset.p){setp(t.dataset.p,t.value);if(t.dataset.p==='mt'&&!S.informe)S.informe='';dirty();return;}
+ if(t.id==='labores'){S.labores=t.value.split(/\n\s*\n/).slice(0,4);dirty();return;}
+ if(t.id==='anexos'){S.anexos=t.value.split('\n');dirty();return;}
+ if(t.id==='enc'){cfgSet('encuesta',t.value);refreshMail();return;}
+ if(t.dataset.ct!=null){S.conclusiones[+t.dataset.ct].text=t.value;dirty();return;}
+ if(t.dataset.chk){S.chk[t.dataset.chk]=t.checked;dirty();return;}
+ if(t.dataset.gu!=null){S.gpx[+t.dataset.gu].use=t.checked;return;}if(t.dataset.gn!=null){S.gpx[+t.dataset.gn].name=t.value;return;}if(t.dataset.gs!=null){S.gpx[+t.dataset.gs].src=t.value;return;}
+ const blk=t.closest('.blk');if(blk&&blk.dataset.s&&t.dataset.f){const b=S[blk.dataset.s][+blk.dataset.i];const j=t.closest('[data-j]')?t.closest('[data-j]').dataset.j:t.dataset.j;let v=t.value;if(t.type==='number')v=+v;if(b.t==='pair'&&j!=null){b.items[+j][t.dataset.f]=v;}else{b[t.dataset.f]=v;if(t.dataset.f==='hdrTxt'||t.dataset.f==='rowsTxt'||t.dataset.f==='widthsTxt'){/* se reconstruye al generar */}}dirty();}
+});
+document.addEventListener('change',async ev=>{const t=ev.target;
+ if(t.id==='tipo'){S.tipo=t.value;dirty();render();return;}
+ if(t.id==='fimg'){await addImgs(Array.from(t.files));return;}
+ if(t.id==='fgpx'){try{S.gpx=parseGPX(await t.files[0].text());dirty();log('GPX leído: '+S.gpx.length+' waypoints.','ok');render();}catch(e){alert(e.message);}return;}
+ if(t.id==='imp'){try{const o=JSON.parse(await t.files[0].text());S=Object.assign(newState(),o);dirty();TAB='caso';render();log('Paquete importado.','ok');}catch(e){alert('Archivo inválido: '+e.message);}return;}
+ const blk=t.closest('.blk');if(blk&&blk.dataset.s&&t.tagName==='SELECT'){render();}
+});
+/* ---------- arranque ---------- */
+async function boot(){try{PRESETS=await (await fetch('presets.json')).json();}catch(e){document.body.insertAdjacentHTML('afterbegin','<p class="bad">No se pudieron cargar las plantillas: '+esc(e)+'</p>');return;}
+ const s=await idbGet('actual');if(s)S=Object.assign(newState(),s);
+ if('serviceWorker' in navigator){try{navigator.serviceWorker.register('sw.js');}catch(e){}}
+ render();setTimeout(()=>{engine().catch(()=>{});},1500);}
+boot();
+</script></body></html>
