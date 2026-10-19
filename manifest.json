@@ -8,8 +8,8 @@
   "standalone",
   "minimal-ui"
  ],
- "background_color": "#1F3864",
- "theme_color": "#1F3864",
+ "background_color": "#FFFFFF",
+ "theme_color": "#2970FC",
  "lang": "es",
  "icons": [
   {
