@@ -43,7 +43,7 @@ const PYODIDE='https://cdn.jsdelivr.net/pyodide/v0.26.4/full/';
 const TXT_TYPES={sub:'Subtítulo (6.x)',body:'Párrafo',list:'Viñeta/lista',bold:'Título en negrita',norm:'Normatividad (encabezado)',law:'Norma (encabezado)',ital:'Cita en cursiva',blank:'Línea en blanco',img:'Imagen / plano',pair:'Dos imágenes lado a lado',table:'Tabla'};
 const SECS=[['resultados','Resultados (numeral 6)'],['interpretacion','Interpretación de resultados']];
 let S=newState();
-function newState(){return {tipo:'inmuebles',chk:{},mt:'',informe:'',fecha:new Date().toISOString().slice(0,10),spoa:'',delito:'',usuario:'',osndp:{nombre:'',depto:'Valle del Cauca',tel:'',email:''},supervisor:'',labores:[''],nota:'',lugar:'',instrumentos:['','','','',''],metodologia:'',insumos:['','',''],resultados:[],interpretacion:[],conclusiones:[],anexos:[],imgs:{},gpx:[],files:[],cfg:{}};}
+function newState(){return {tipo:'inmuebles',chk:{},mt:'',informe:'',fecha:new Date().toISOString().slice(0,10),spoa:'',delito:'',usuario:'',osndp:{nombre:'',depto:'Valle del Cauca',tel:'',email:''},supervisor:'',labores:[''],nota:'',lugar:'',instrumentos:['','','','',''],metodologia:'',insumos:['','',''],resultados:[],interpretacion:[],conclusiones:[],anexos:[],imgs:{},gpx:[],files:[],cfg:{},ipat:{num:'',ficha:'',items:{},hall:[],preg:''}};}
 let PRESETS=null,ENG=null,TAB='asist';const PDFS={};
 /* ---------- registro ---------- */
 function log(m,c){const l=$('#log');if(!l)return;const d=document.createElement('div');d.className=c||'';d.textContent=new Date().toLocaleTimeString()+'  '+m;l.prepend(d);}
@@ -168,14 +168,32 @@ function vGen(){const er=validate(),pd=pending();return '<div class="card"><h2>R
  +'<div class="card"><h2>Copia de seguridad</h2><button class="b s" id="exp">Exportar paquete del caso (.json)</button> <label style="display:inline-block"><input type="file" id="imp" accept=".json" style="display:none"><span class="b s" style="display:inline-block;border:1px solid var(--pri);border-radius:9px;padding:9px 14px;cursor:pointer">Importar paquete</span></label></div>'
  +'<div class="card"><h2>Registro</h2><div id="log"></div></div>';}
 /* ---------- render y eventos ---------- */
-const TABS=[['asist','Asistente'],['caso','Caso'],['ins','Insumos'],['cont','Contenido'],['gen','Generar']];
-function render(){const m=$('#main');const y=window.scrollY;m.innerHTML=({asist:vAsist,caso:vCaso,ins:vInsumos,cont:vContenido,gen:vGen})[TAB]();$('#nav').innerHTML=TABS.map(t=>'<button data-tab="'+t[0]+'" class="'+(t[0]===TAB?'on':'')+'">'+t[1]+'</button>').join('');window.scrollTo(0,y);if(TAB==='asist')listCasos();if(TAB==='gen')refreshMail();}
+
+const IPAT_G=[['A. Cumplimiento formal (Res. 11268/2012)',[['a1','Código IPAT (letra + 9 dígitos) legible y repetido en todas las hojas'],['a2','Organismo de tránsito; fecha y hora (militar) de ocurrencia y de levantamiento'],['a3','Gravedad (campo 2): una sola casilla'],['a4','Clase de accidente (campo 5): solo la clase principal'],['a5','Lugar, dirección y coordenadas'],['a6','Sin enmiendas ni doble marca en casillas'],['a7','Firmas de conductores y del agente'],['a8','Testigos, anexos y huellas diligenciados o con constancia de que no existen'],['a9','Es el original (no fotocopia del formato)'],['a10','Croquis presente']]],
+['B. Coherencia interna',[['b1','NUNC de 21 dígitos (dpto 2, mpio 3, entidad 2, unidad 5, año 4, consecutivo 5) igual en todas las hojas'],['b2','Ocurrencia anterior al levantamiento'],['b3','SOAT vigente a la fecha del accidente'],['b4','Revisión técnico-mecánica obligatoria y vigente'],['b5','Licencia (categoría y vigencia) acorde al vehículo'],['b6','Clase de accidente, lugar de impacto y daños coherentes'],['b7','Hipótesis, observaciones y comparendo coherentes entre sí'],['b8','Víctimas coherentes con los totales (campo 10)'],['b9','Tipo de documento coherente con el número de identificación'],['b10','Pasajeros/acompañantes en el momento del accidente consignados'],['b11','Prueba de embriaguez/sustancias consistente (sin doble marca, con grado)']]],
+['C. Croquis',[['c1','Escala, plano, vista y convenciones'],['c2','Punto de referencia y ejes con sus offsets'],['c3','Tabla de medidas completa (contorno de cada vehículo)'],['c4','Medidas coherentes con las dimensiones reales del vehículo'],['c5','Puntos dentro del ancho de la vía'],['c6','Punto de impacto, huellas y posición final'],['c7','Evidencia movida señalada (línea punteada y nota)']]],
+['D. Concordancia con el expediente',[['d1','Constancias y NUNC'],['d2','Fotografías y planos'],['d3','Informes médicos / epicrisis'],['d4','Consulta RUNT (SOAT, RTM, licencias, propietarios)']]]];
+const IPAT_S={'':'Sin revisar','ok':'✔ Cumple','w':'⚠ Dudoso','x':'✖ No cumple','na':'N/A'};
+function vIpat(){const I=S.ipat;return '<div class="card"><h2>Análisis del IPAT</h2><p class="note">Registra la lectura del IPAT (formulario y manuscrito) y valídalo contra la Resolución 11268 de 2012 (compilada en la Resolución 20223040045295 de 2022, Anexos 72 y 73). Los códigos de hipótesis e infracción no se citan de memoria: verifícalos en las tablas oficiales. Carga el PDF o las fotos del IPAT en la pestaña Insumos para consultarlos.</p>'+field('N.° del IPAT','ipat.num','text','A001402426')+area('Ficha del evento (fecha, lugar, vehículos, conductores, lesionados, hipótesis, comparendo, NUNC y lecturas dudosas)','ipat.ficha',8)+'</div>'
++IPAT_G.map(g=>'<div class="card"><h2>'+g[0]+'</h2>'+g[1].map(([id,t])=>'<div class="blk"><div>'+esc(t)+'</div><select data-ip="'+id+'">'+Object.keys(IPAT_S).map(k=>'<option value="'+k+'"'+((I.items[id]||{}).s===k||(!(I.items[id])&&k==='')?' selected':'')+'>'+IPAT_S[k]+'</option>').join('')+'</select><input data-ipn="'+id+'" placeholder="Nota / evidencia" value="'+esc((I.items[id]||{}).n||'')+'"></div>').join('')+'</div>').join('')
++'<div class="card"><h2>Hallazgos e inconsistencias</h2>'+I.hall.map((h,i)=>'<div class="blk"><div class="h"><select data-ihp="'+i+'">'+['Alta','Media','Baja'].map(p=>'<option'+(h.p===p?' selected':'')+'>'+p+'</option>').join('')+'</select><button class="b d sm" data-ihd="'+i+'">Eliminar</button></div><textarea data-iht="'+i+'" rows="3" placeholder="Campo · evidencia · por qué importa">'+esc(h.t)+'</textarea></div>').join('')+'<button class="b s" id="ihAdd">Agregar hallazgo</button></div>'
++'<div class="card"><h2>Preguntas abiertas y documentos a solicitar</h2><textarea id="ipreg" rows="4">'+esc(I.preg)+'</textarea><button class="b" id="ipIns">Insertar análisis en Interpretación del informe</button><p class="note">Agrega al final de Interpretación: ficha, puntos dudosos o incumplidos de la matriz, hallazgos por prioridad y preguntas abiertas. Luego puedes editarlo en Contenido.</p></div>';}
+function ipatBlocks(){const I=S.ipat,B=(t,x)=>({t:t,text:x});const o=[B('bold','Análisis del Informe Policial de Accidente de Tránsito'+(I.num?' N.° '+I.num:'')+':')];if(I.ficha.trim())o.push(B('body',I.ficha.trim()));
+const f=[];IPAT_G.forEach(g=>g[1].forEach(([id,t])=>{const it=I.items[id];if(it&&(it.s==='w'||it.s==='x'))f.push((it.s==='x'?'No cumple: ':'Dudoso: ')+t+(it.n?' — '+it.n:'')+'.');}));
+if(f.length){o.push(B('body','Validación frente a la Resolución 11268 de 2012:'));f.forEach(x=>o.push(B('body','- '+x)));}
+if(I.hall.length){o.push(B('body','Hallazgos e inconsistencias (por prioridad):'));['Alta','Media','Baja'].forEach(p=>I.hall.filter(h=>h.p===p&&h.t.trim()).forEach((h,n)=>o.push(B('body','['+p+'] '+h.t.trim()))));}
+if(I.preg.trim())o.push(B('body','Preguntas abiertas: '+I.preg.trim()));o.push({t:'blank'});return o;}
+const TABS=[['asist','Asistente'],['caso','Caso'],['ins','Insumos'],['ipat','IPAT'],['cont','Contenido'],['gen','Generar']];
+function render(){const m=$('#main');const y=window.scrollY;m.innerHTML=({asist:vAsist,caso:vCaso,ins:vInsumos,ipat:vIpat,cont:vContenido,gen:vGen})[TAB]();$('#nav').innerHTML=TABS.map(t=>'<button data-tab="'+t[0]+'" class="'+(t[0]===TAB?'on':'')+'">'+t[1]+'</button>').join('');window.scrollTo(0,y);if(TAB==='asist')listCasos();if(TAB==='gen')refreshMail();}
 function refreshMail(){const e=$('#mail');if(!e)return;try{const m=emailText();e.textContent='Asunto: '+m.asunto+'\n\n'+m.cuerpo;}catch(x){e.textContent='Completa el caso para generar el correo.';}}
 async function listCasos(){const k=(await idbAll()).filter(x=>String(x).startsWith('caso:'));const e=$('#casos');if(!e)return;e.innerHTML=k.length?k.map(x=>'<button class="b s sm" data-open="'+esc(x)+'">'+esc(String(x).slice(5))+'</button><button class="b d sm" data-delc="'+esc(x)+'">×</button>').join(' '):'Aún no hay casos guardados.';}
 function applyPreset(){const p=PRESETS[S.tipo];if(S.resultados.length&&!confirm('Esto reemplaza el contenido actual de Resultados, Interpretación y Conclusiones. ¿Continuar?'))return;const c=JSON.parse(JSON.stringify(p));['labores','nota','lugar','instrumentos','metodologia','insumos','resultados','interpretacion','conclusiones','anexos'].forEach(k=>{if(k==='labores'&&S.labores.some(x=>x.trim()))return;S[k]=c[k];});dirty();log('Plantilla «'+p.nombre+'» aplicada.','ok');TAB='caso';render();}
 document.addEventListener('click',async ev=>{const t=ev.target.closest('button,[data-tab]');if(!t)return;const d=t.dataset;
  if(d.tab){TAB=d.tab;render();return;}
  if(t.id==='aplicar'){applyPreset();return;}
+ if(t.id==='ihAdd'){S.ipat.hall.push({p:'Media',t:''});dirty();render();return;}
+ if(d.ihd!=null){S.ipat.hall.splice(+d.ihd,1);dirty();render();return;}
+ if(t.id==='ipIns'){S.interpretacion.push(...ipatBlocks());dirty();log('Análisis del IPAT agregado al final de Interpretación.','ok');TAB='cont';render();return;}
  if(d.pdf!=null){const f=S.files[+d.pdf];await pdfPage(f.name,+(($('#pp'+d.pdf)||{}).value||1));return;}
  if(t.id==='clrf'){S.files=[];dirty();render();return;}
  if(d.a){const b=t.closest('.blk'),s=b.dataset.s,i=+b.dataset.i,a=S[s];if(d.a==='del'){a.splice(i,1);}else if(d.a==='up'&&i>0){[a[i-1],a[i]]=[a[i],a[i-1]];}else if(d.a==='dn'&&i<a.length-1){[a[i+1],a[i]]=[a[i],a[i+1]];}dirty();render();return;}
@@ -192,6 +210,9 @@ document.addEventListener('click',async ev=>{const t=ev.target.closest('button,[
  if(d.delc){if(confirm('¿Borrar este caso del equipo?')){await idbDel(d.delc);listCasos();}return;}
 });
 document.addEventListener('input',ev=>{const t=ev.target;
+ if(t.dataset.ipn){const k=t.dataset.ipn;S.ipat.items[k]=Object.assign({s:'',n:''},S.ipat.items[k],{n:t.value});dirty();return;}
+ if(t.dataset.iht!=null){S.ipat.hall[+t.dataset.iht].t=t.value;dirty();return;}
+ if(t.id==='ipreg'){S.ipat.preg=t.value;dirty();return;}
  if(t.dataset.p){setp(t.dataset.p,t.value);if(t.dataset.p==='mt'&&!S.informe)S.informe='';dirty();return;}
  if(t.id==='labores'){S.labores=t.value.split(/\n\s*\n/).slice(0,4);dirty();return;}
  if(t.id==='anexos'){S.anexos=t.value.split('\n');dirty();return;}
@@ -202,6 +223,8 @@ document.addEventListener('input',ev=>{const t=ev.target;
  const blk=t.closest('.blk');if(blk&&blk.dataset.s&&t.dataset.f){const b=S[blk.dataset.s][+blk.dataset.i];const j=t.closest('[data-j]')?t.closest('[data-j]').dataset.j:t.dataset.j;let v=t.value;if(t.type==='number')v=+v;if(b.t==='pair'&&j!=null){b.items[+j][t.dataset.f]=v;}else{b[t.dataset.f]=v;if(t.dataset.f==='hdrTxt'||t.dataset.f==='rowsTxt'||t.dataset.f==='widthsTxt'){/* se reconstruye al generar */}}dirty();}
 });
 document.addEventListener('change',async ev=>{const t=ev.target;
+ if(t.dataset.ip){const k=t.dataset.ip;S.ipat.items[k]=Object.assign({s:'',n:''},S.ipat.items[k],{s:t.value});dirty();return;}
+ if(t.dataset.ihp!=null){S.ipat.hall[+t.dataset.ihp].p=t.value;dirty();return;}
  if(t.id==='tipo'){S.tipo=t.value;dirty();render();return;}
  if(t.id==='fimg'){await addImgs(Array.from(t.files));return;}
  if(t.id==='fdir'||t.id==='ffil'){await ingest(t.files);return;}
