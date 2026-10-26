@@ -247,6 +247,7 @@ class F06:
             elif t == 'body': out.append(self.body(b['text'], italic=True if b.get('italic') else None))
             elif t == 'list': out.append(self.lst(b['text']))
             elif t == 'bold': out.append(self.mk(self.T_BOLDITEM, b['text'], bold=True))
+            elif t == 'hbody': out.append(self.mk(self.T_BODY, b['text'], bold=True))
             elif t == 'norm': out.append(self.mk(self.T_NORM, b['text'], bold=True))
             elif t == 'law': out.append(self.mk(self.T_LAW, b['text'], bold=True))
             elif t == 'ital': out.append(self.mk(self.T_ITAL, b['text']))
@@ -335,6 +336,51 @@ class F06:
         self.finish()
         return self.save()
 
+    # -- informe de comisión programada / no desplazamiento (modo 'comision')
+    def build_comision(self):
+        s = self.spec; d = self.d; P = self.P
+        for k in ('mt', 'informe', 'usuario'): self.refs[k] = s.get(k, '')
+        self.refs['osndp'] = (s.get('osndp') or {}).get('nombre', '')
+        for sct in d.sections:
+            for t in sct.header.tables:
+                for r in t.rows:
+                    cs = uniq(r)
+                    if len(cs) == 2 and cs[0].text.startswith('MISIÓN DE TRABAJO'):
+                        set_cell(cs[0], 'MISIÓN DE TRABAJO No. ' + s['mt']); set_cell(cs[1], 'INFORME No. ' + s['informe'])
+                        fix_cajetin(t, 5200, 3900)
+        f = s['fecha']; c = uniq(d.tables[1].rows[0])
+        set_cell(c[0], str(f['y'])); set_cell(c[1], '%02d' % int(f['m'])); set_cell(c[2], '%02d' % int(f['d']))
+        T2 = d.tables[2]; cs = uniq(T2.rows[2]); spoa = re.sub(r'\D', '', s['spoa'])
+        if len(spoa) != 21: raise ValueError('El SPOA debe tener 21 dígitos (CUI); recibido: %d' % len(spoa))
+        for ce, dg in zip(cs, spoa): set_cell(ce, dg)
+        set_after_label(uniq(T2.rows[4])[0], s['delito']); set_after_label(uniq(T2.rows[5])[0], s['usuario'])
+        o = s['osndp']; T3 = d.tables[3]
+        set_after_label(uniq(T3.rows[1])[0], o['nombre'])
+        c = uniq(T3.rows[2]); set_after_label(c[0], o['depto']); set_after_label(c[1], o['tel']); set_after_label(c[2], o['email'])
+        set_after_label(uniq(T3.rows[3])[0], s['supervisor'])
+        # labores solicitadas (literal de la MT)
+        labs = s['labores']; slots = [10, 11, 12, 13]
+        for i, txt in enumerate(labs[:4]): settext(P[slots[i]], self.T(txt))
+        for i in slots[len(labs[:4]):]: P[i]._p.getparent().remove(P[i]._p)
+        P[15]._p.getparent().remove(P[15]._p)
+        # labores realizadas: solo el texto del informe
+        self.clear(16, 162)
+        R = self.render(s['cuerpo']) + [self.blank()]
+        self.insert_after(P[16]._p, R)
+        anx = [a for a in s.get('anexos', []) if a.strip()]
+        for e in self.region(162, 168): e.getparent().remove(e)
+        if anx:
+            settext(P[162], 'ANEXOS:')
+            self.insert_after(P[162]._p, [self.mk(self.T_ANX, t) for t in anx] + [self.blank()])
+        else:
+            settext(P[162], 'ANEXOS: N/A')
+        P[16].paragraph_format.keep_with_next = True; P[162].paragraph_format.keep_with_next = True
+        ps = d.paragraphs
+        k = [i for i, p in enumerate(ps) if 'Quien suscribe' in p.text][0]
+        for i in range(k - 1, k + 8): ps[i].paragraph_format.keep_with_next = True
+        self.finish()
+        return self.save()
+
     # -- listas APA 7 con campos PAGEREF
     def field_run(self, p, instr, cached):
         def r_with(child):
@@ -413,7 +459,8 @@ def build_f82(tpl_bytes, spec):
 # ---------------------------------------------------------------- API para Pyodide
 def run_f06(tpl_b64, spec_json, images):
     spec = json.loads(spec_json)
-    out = F06(base64.b64decode(tpl_b64), spec, dict(images)).build()
+    f06 = F06(base64.b64decode(tpl_b64), spec, dict(images))
+    out = f06.build_comision() if spec.get('modo') == 'comision' else f06.build()
     return base64.b64encode(out).decode()
 
 def run_f82(tpl_b64, spec_json):
