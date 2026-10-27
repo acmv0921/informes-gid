@@ -249,11 +249,10 @@ async function aiAnalyze(){const key=lsGet('gid_apikey');{const km=keyCheck(key)
  try{stat('Preparando páginas…');let imgs=[];if(sel.value.startsWith('pdf:'))imgs=await pdfPagesJpeg(sel.value.slice(4),$('#aiPages').value);else imgs=Object.keys(S.imgs).slice(0,12).map(k=>S.imgs[k].data.split(',')[1]);
   if(!imgs.length){stat('No se obtuvieron páginas (revisa el rango).');return;}
   stat('Enviando '+imgs.length+' página(s) a la API… puede tardar 1–2 minutos.');
-  const body={model:$('#aiModel').value,max_tokens:8000,messages:[{role:'user',content:imgs.map(b=>({type:'image',source:{type:'base64',media_type:'image/jpeg',data:b}})).concat([{type:'text',text:ipatPrompt()}])}]};
-  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key.trim(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});
-  const j=await r.json();if(!r.ok)throw new Error(apiErr(r,j));
+  const body={model:$('#aiModel').value,max_tokens:16000,messages:[{role:'user',content:imgs.map(b=>({type:'image',source:{type:'base64',media_type:'image/jpeg',data:b}})).concat([{type:'text',text:ipatPrompt()}])}]};
+  const {r,j}=await anthPost(body,key);if(!r.ok)throw new Error(apiErr(r,j));
   const txt=j.content.map(c=>c.text||'').join('');const a=txt.indexOf('{'),b=txt.lastIndexOf('}');if(a<0||b<a)throw noJson(txt,j);let o;try{o=JSON.parse(txt.slice(a,b+1));}catch(x){throw noJson(txt,j);}
-  const I=S.ipat;if(o.datos&&o.datos.ipat&&!I.num)I.num=o.datos.ipat;if(o.ficha)I.ficha=String(o.ficha);
+  const I=S.ipat;if(o.datos&&o.datos.ipat){const nn=String(o.datos.ipat).replace(/\s/g,'');if(I.num&&I.num!==nn)I.hall.push({p:'Media',t:'[Auto] El N.° de IPAT del campo («'+I.num+'») difiere del leído en el documento («'+nn+'»). Se usó el leído; verifica cuál corresponde al caso.'});I.num=nn;}if(o.ficha)I.ficha=String(o.ficha);
   Object.keys(o.matriz||{}).forEach(id=>{const m=o.matriz[id]||{};I.items[id]={s:['ok','w','x','na'].includes(m.s)?m.s:'w',n:String(m.n||'')};});
   (o.hallazgos||[]).forEach(h=>{if(h&&h.t)I.hall.push({p:['Alta','Media','Baja'].includes(h.p)?h.p:'Media',t:'[IA] '+h.t});});
   if(o.preguntas)I.preg=(I.preg?I.preg+'\n':'')+(Array.isArray(o.preguntas)?o.preguntas.join('\n'):String(o.preguntas));
@@ -324,9 +323,8 @@ function vJur(){const J=jurS();const all=jurAll();const rel=all.filter(f=>J.fil=
  +(res?'<h3 style="margin:14px 4px 6px">Resultados de la búsqueda</h3>'+res:'')
  +'<h3 style="margin:14px 4px 6px">Biblioteca ('+rel.length+(J.fil==='todos'?'':' para este tipo de caso')+') <button class="b s sm" data-jfil="'+(J.fil==='todos'?'tipo':'todos')+'">'+(J.fil==='todos'?'Ver solo las de este tipo':'Ver todas')+'</button></h3>'+rel.map(jurCard).join('');}
 async function jurAsk(prompt,uses){const key=lsGet('gid_apikey');{const km=keyCheck(key);if(km)throw new Error(km);}
- const body={model:lsGet('gid_aimodel')||'claude-sonnet-5-5',max_tokens:4000,tools:[{type:'web_search_20250305',name:'web_search',max_uses:uses||5,allowed_domains:JUR_DOM}],messages:[{role:'user',content:prompt}]};
- const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key.trim(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});
- const j=await r.json();if(!r.ok)throw new Error(apiErr(r,j));
+ const body={model:lsGet('gid_aimodel')||'claude-sonnet-5-5',max_tokens:6000,tools:[{type:'web_search_20250305',name:'web_search',max_uses:uses||5,allowed_domains:JUR_DOM}],messages:[{role:'user',content:prompt}]};
+ const {r,j}=await anthPost(body,key);if(!r.ok)throw new Error(apiErr(r,j));
  const urls=new Set();let txt='';(j.content||[]).forEach(c=>{if(c.type==='text')txt+=c.text||'';if(c.type==='web_search_tool_result'&&Array.isArray(c.content))c.content.forEach(x=>{if(x&&x.url)urls.add(x.url);});});
  const a=txt.indexOf('{'),b=txt.lastIndexOf('}');if(a<0||b<a)throw new Error('La respuesta no trajo datos legibles; intenta de nuevo.');
  return {o:JSON.parse(txt.slice(a,b+1)),urls:urls};}
@@ -380,6 +378,10 @@ function vGen(){const h=vGen0();const k=h.indexOf('</div>')+6;return h.slice(0,k
 function keyCheck(k){k=(k||'').trim();if(!k)return 'Escribe tu clave de API de Claude (se crea en console.anthropic.com → API Keys).';if(!/^sk-ant-[A-Za-z0-9_\-]{30,}$/.test(k))return 'La clave guardada no es válida: tiene '+k.length+' caracteres y debe empezar por «sk-ant-» (unos 100 caracteres). Crea una en console.anthropic.com → API Keys; la suscripción de Claude.ai no incluye clave de API.';return '';}
 function keyHint(){const k=lsGet('gid_apikey')||'';if(!k)return '';const m=keyCheck(k);return m?'<span class="bad">'+esc(m)+'</span>':'<span class="ok">Clave con formato válido ('+k.length+' caracteres).</span>';}
 function apiErr(r,j){if(r.status===401)return 'La API rechazó la clave (401). Revisa que sea una clave de API de console.anthropic.com, completa y vigente.';if(r.status===402||/credit|balance/i.test((j.error&&j.error.message)||''))return 'La cuenta de la API no tiene saldo: recarga créditos en console.anthropic.com → Billing.';if(r.status===429)return 'Límite de uso de la API (429): espera un minuto y repite.';return (j.error&&j.error.message)||('HTTP '+r.status);}
+async function anthPost(body,key){const U='https://api.anthropic.com/v1/messages';const H={'content-type':'application/json','x-api-key':String(key||'').trim(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'};
+ let b=Object.assign({thinking:{type:'between_tools'}},body);let r=await fetch(U,{method:'POST',headers:H,body:JSON.stringify(b)});let j=await r.json();
+ if(r.status===400&&/thinking/i.test(JSON.stringify(j.error||j))){delete b.thinking;r=await fetch(U,{method:'POST',headers:H,body:JSON.stringify(b)});j=await r.json();}
+ return {r:r,j:j};}
 function noJson(txt,j){const sn=AS0(txt).replace(/\s+/g,' ').trim().slice(0,350);return new Error('La IA no devolvió el formato esperado'+(j&&j.stop_reason==='max_tokens'?' (se cortó por longitud)':'')+(sn?'. Respondió: «'+sn+(AS0(txt).length>350?'…':'')+'»':'.'));}
 function AS0(x){return String(x==null?'':x);}
 function usedImgs(){const u=new Set();[...S.resultados,...S.interpretacion].forEach(b=>{if(b.t==='img'&&b.file)u.add(b.file);if(b.t==='pair')b.items.forEach(i=>i.file&&u.add(i.file));});return u;}
@@ -409,8 +411,7 @@ async function aiImgs(){const km=keyCheck(lsGet('gid_apikey'));if(km){imStat(km)
  const model=lsGet('gid_aimodel')||'claude-sonnet-5-5';const out=[];
  try{for(let i=0;i<ks.length;i+=6){const ch=ks.slice(i,i+6);imStat('Analizando imágenes '+(i+1)+'–'+(i+ch.length)+' de '+ks.length+'…');const b64=await Promise.all(ch.map(k=>smallJpeg(S.imgs[k].data,1400)));
    const content=[];b64.forEach((d,j)=>{content.push({type:'text',text:'Imagen '+(j+1)+':'});content.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:d}});});content.push({type:'text',text:imgPrompt(ch.length)});
-   const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':lsGet('gid_apikey').trim(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:model,max_tokens:4000,messages:[{role:'user',content:content}]})});
-   const j=await r.json();if(!r.ok)throw new Error(apiErr(r,j));const txt=(j.content||[]).map(c=>c.text||'').join('');const a=txt.indexOf('{'),e=txt.lastIndexOf('}');if(a<0||e<a)throw noJson(txt,j);
+   const {r,j}=await anthPost({model:model,max_tokens:8000,messages:[{role:'user',content:content}]},lsGet('gid_apikey'));if(!r.ok)throw new Error(apiErr(r,j));const txt=(j.content||[]).map(c=>c.text||'').join('');const a=txt.indexOf('{'),e=txt.lastIndexOf('}');if(a<0||e<a)throw noJson(txt,j);
    const o=JSON.parse(txt.slice(a,e+1));const got=new Set();(o.items||[]).forEach(it=>{const k=ch[(+it.n)-1];if(!k||got.has(k))return;got.add(k);out.push({k:k,tipo:['foto','plano','mapa','croquis','otro'].includes(it.tipo)?it.tipo:guessTipo(S.imgs[k].name||''),titulo:String(it.titulo||'').slice(0,120),pie:String(it.pie||'').slice(0,300),descripcion:String(it.descripcion||'').slice(0,900)});});
    ch.forEach(k=>{if(!out.some(x=>x.k===k))out.push({k:k,tipo:guessTipo(S.imgs[k].name||''),titulo:'',pie:'',descripcion:''});});}
   const c=colocar(out);dirty();render();imStat('Listo: '+c.foto+' foto(s), '+c.mapa+' mapa(s), '+c.croquis+' croquis y '+c.plano+' plano(s) colocados. Revisa pies y descripciones («IA: revisar»).');}
@@ -467,14 +468,13 @@ async function anaSources(kind){const A=anaS();const content=[];let chars=0,nimg
    if(t.length>45000){t=t.slice(0,45000)+'\n[…recortado…]';trunc=true;}if(chars+t.length>170000){trunc=true;continue;}chars+=t.length;content.push({type:'text',text:'=== DOCUMENTO: '+nm+' (clasificado como '+e.kind+') ===\n'+t});}}
  if(kind==='pl'){for(const k of Object.keys(A.img).filter(x=>A.img[x]&&S.imgs[x])){if(nimg>=16){trunc=true;break;}nimg++;content.push({type:'text',text:'Imagen de la biblioteca «'+k+'» ('+(S.imgs[k].name||'')+'):'});content.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:await smallJpeg(S.imgs[k].data,1800)}});}}
  return {content:content,resumen:(kind==='exp'?ndoc+' documento(s), '+Math.round(chars/1000)+' mil caracteres':'')+(nimg?(kind==='exp'&&ndoc?' y ':'')+nimg+' imagen(es)':'')+(trunc?' (se recortó por tamaño)':''),n:content.length};}
-async function anaCall(content,maxTok){const model=lsGet('gid_aimodel')||'claude-sonnet-5-5';const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':lsGet('gid_apikey').trim(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:model,max_tokens:maxTok,messages:[{role:'user',content:content}]})});
- const j=await r.json();if(!r.ok)throw new Error(apiErr(r,j));const txt=(j.content||[]).map(c=>c.text||'').join('');const a=txt.indexOf('{'),b=txt.lastIndexOf('}');if(a<0||b<a)throw noJson(txt,j);
+async function anaCall(content,maxTok){const model=lsGet('gid_aimodel')||'claude-sonnet-5-5';const {r,j}=await anthPost({model:model,max_tokens:maxTok,messages:[{role:'user',content:content}]},lsGet('gid_apikey'));if(!r.ok)throw new Error(apiErr(r,j));const txt=(j.content||[]).map(c=>c.text||'').join('');const a=txt.indexOf('{'),b=txt.lastIndexOf('}');if(a<0||b<a)throw noJson(txt,j);
  try{return JSON.parse(txt.slice(a,b+1));}catch(e){throw new Error('El JSON de la respuesta está incompleto'+(j.stop_reason==='max_tokens'?' (se cortó por longitud: marca menos documentos)':'')+'.');}}
 async function anaRun(kind){const km=keyCheck(lsGet('gid_apikey'));if(km){anaStat(km);alert(km);return;}const A=anaS();
  try{anaStat('Preparando fuentes…');const src=await anaSources(kind);if(!src.n){anaStat(kind==='pl'?'Marca al menos una imagen o un PDF para analizar.':'Marca al menos un documento.');return;}
   if(!confirm('Se enviarán a la API de Claude (Anthropic): '+src.resumen+'. Contienen datos de un expediente penal. ¿Continuar?'))return;
   anaStat('Analizando con '+(lsGet('gid_aimodel')||'claude-sonnet-5-5')+'… puede tardar entre 1 y 3 minutos.');
-  const o=await anaCall(src.content.concat([{type:'text',text:kind==='exp'?anaPromptExp():anaPromptPl()}]),kind==='exp'?12000:6000);
+  const o=await anaCall(src.content.concat([{type:'text',text:kind==='exp'?anaPromptExp():anaPromptPl()}]),kind==='exp'?16000:10000);
   if(kind==='exp')A.exp=o;else A.pl=o;dirty();render();anaStat('Listo. Revisa los resultados antes de enviarlos al informe.');}
  catch(e){anaStat('Error: '+e.message);}}
 const ORD=['PRIMERA','SEGUNDA','TERCERA','CUARTA','QUINTA','SEXTA','SÉPTIMA','OCTAVA','NOVENA','DÉCIMA'];
