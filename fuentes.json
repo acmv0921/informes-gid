@@ -1,0 +1,239 @@
+{
+ "version": "6.0",
+ "verificado": "2026-10-27",
+ "fuentes": [
+  {
+   "id": "n-l906",
+   "clase": "Norma",
+   "cita": "Ley 906 de 2004",
+   "corporacion": "Congreso de la República",
+   "tema": "Código de Procedimiento Penal: informe pericial, cadena de custodia, prueba pericial y facultades de la defensa.",
+   "uso": "Marco procesal invariable de todo informe (artículos tomados de tu protocolo: 204, 210, 213, 214, 254–266, 375, 376). Revisa en el texto las notas de vigencia de cada artículo antes de citarlo.",
+   "url": "https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=14787",
+   "tipos": [
+    "todos"
+   ],
+   "verificada": {
+    "fecha": "2026-10-27",
+    "fuente": "Gestor Normativo (Función Pública)",
+    "nota": "Texto consultado; los artículos citados salen de tu protocolo y no se releyeron uno a uno."
+   }
+  },
+  {
+   "id": "n-l599",
+   "clase": "Norma",
+   "cita": "Ley 599 de 2000",
+   "corporacion": "Congreso de la República",
+   "tema": "Código Penal: delitos imputados y su tipificación.",
+   "uso": "Para identificar el artículo del delito de la Misión de Trabajo.",
+   "url": "https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=6388",
+   "tipos": [
+    "todos"
+   ],
+   "verificada": {
+    "fecha": "2026-10-27",
+    "fuente": "Gestor Normativo (Función Pública)",
+    "nota": "Texto consultado."
+   }
+  },
+  {
+   "id": "n-l769",
+   "clase": "Norma",
+   "cita": "Ley 769 de 2002",
+   "corporacion": "Congreso de la República",
+   "tema": "Código Nacional de Tránsito Terrestre.",
+   "uso": "Informes de tránsito: definiciones, normas de circulación y procedimiento del accidente.",
+   "url": "https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=5557",
+   "tipos": [
+    "transito"
+   ],
+   "verificada": {
+    "fecha": "2026-10-27",
+    "fuente": "Gestor Normativo (Función Pública)",
+    "nota": "Texto consultado; el sistema muestra modificaciones posteriores."
+   }
+  },
+  {
+   "id": "n-d1079",
+   "clase": "Norma",
+   "cita": "Decreto 1079 de 2015",
+   "corporacion": "Presidencia de la República",
+   "tema": "Decreto Único Reglamentario del Sector Transporte (versión integrada con sus modificaciones).",
+   "uso": "Informes de tránsito: reglamentación vigente del sector.",
+   "url": "https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=77889",
+   "tipos": [
+    "transito"
+   ],
+   "verificada": {
+    "fecha": "2026-10-27",
+    "fuente": "Gestor Normativo (Función Pública)",
+    "nota": "El texto indica última actualización 21/09/2025 (Decreto 1017 de 2025)."
+   }
+  },
+  {
+   "id": "cc-c496-15",
+   "clase": "Sentencia Corte Constitucional",
+   "cita": "Sentencia C-496/15",
+   "corporacion": "Corte Constitucional",
+   "fecha": "2015-08-05",
+   "tema": "Autenticidad de los elementos materiales probatorios y la evidencia física sometidos a cadena de custodia.",
+   "resumen": "Sumario de la relatoría: autenticidad de EMP y EF sometidos a cadena de custodia y deber de asegurarlos garantizando la cadena.",
+   "uso": "Cuando el informe toca cadena de custodia o mismidad de elementos.",
+   "url": "https://www.corteconstitucional.gov.co/relatoria/2015/C-496-15.htm",
+   "tipos": [
+    "todos"
+   ],
+   "verificada": {
+    "fecha": "2026-10-27",
+    "fuente": "Relatoría de la Corte Constitucional",
+    "nota": "Existencia, fecha y tema confirmados por el sumario; lee la sentencia antes de citar la regla."
+   }
+  },
+  {
+   "id": "cc-c473-16",
+   "clase": "Sentencia Corte Constitucional",
+   "cita": "Sentencia C-473/16",
+   "corporacion": "Corte Constitucional",
+   "fecha": "2016-08-31",
+   "tema": "Principio de igualdad de armas en el juicio penal oral.",
+   "resumen": "Sumario de la relatoría: la igualdad de armas implica que solo fiscalía y defensa presenten pruebas de refutación.",
+   "uso": "Respaldo para la actividad probatoria de la defensa.",
+   "url": "https://www.corteconstitucional.gov.co/relatoria/2016/C-473-16.htm",
+   "tipos": [
+    "todos"
+   ],
+   "verificada": {
+    "fecha": "2026-10-27",
+    "fuente": "Relatoría de la Corte Constitucional",
+    "nota": "Existencia, fecha y tema confirmados por el sumario; lee la sentencia antes de citar la regla."
+   }
+  },
+  {
+   "id": "cc-c025-09",
+   "clase": "Sentencia Corte Constitucional",
+   "cita": "Sentencia C-025/09",
+   "corporacion": "Corte Constitucional",
+   "fecha": "2009-01-27",
+   "tema": "Derecho a la defensa como garantía del debido proceso.",
+   "resumen": "Sumario de la relatoría: definición e importancia del derecho de defensa.",
+   "uso": "Fundamento general de la labor pericial de la defensa.",
+   "url": "https://www.corteconstitucional.gov.co/relatoria/2009/C-025-09.htm",
+   "tipos": [
+    "todos"
+   ],
+   "verificada": {
+    "fecha": "2026-10-27",
+    "fuente": "Relatoría de la Corte Constitucional",
+    "nota": "Existencia, fecha y tema confirmados por el sumario; lee la sentencia antes de citar la regla."
+   }
+  },
+  {
+   "id": "csj-sp160-2017",
+   "clase": "Sentencia CSJ Sala de Casación Penal",
+   "cita": "SP160-2017",
+   "rad": "44741",
+   "corporacion": "Corte Suprema de Justicia, Sala de Casación Penal",
+   "tema": "Cadena de custodia: finalidad y autenticidad del elemento material probatorio.",
+   "resumen": "Según la relatoría de la Corte: la cadena de custodia incide en la autenticidad de los EMP y la evidencia física; quien aporta la prueba debe demostrar su autenticidad y la ruptura de la cadena se valora como tal.",
+   "uso": "Auditoría de cadena de custodia y mismidad de elementos.",
+   "url": "https://cortesuprema.gov.co/corte/?p=12114",
+   "tipos": [
+    "todos"
+   ],
+   "verificada": {
+    "fecha": "2026-10-27",
+    "fuente": "Relatoría de la Corte Suprema (cortesuprema.gov.co)",
+    "nota": "Fecha de la providencia y ponente no confirmados (la página solo trae la fecha de publicación, 30/01/2017). Confírmalos en el PDF."
+   }
+  },
+  {
+   "id": "csj-sp2709-2018",
+   "clase": "Sentencia CSJ Sala de Casación Penal",
+   "cita": "SP2709-2018",
+   "rad": "50637",
+   "corporacion": "Corte Suprema de Justicia, Sala de Casación Penal",
+   "tema": "Dictamen pericial: práctica, valor probatorio y requisitos.",
+   "resumen": "Según la relatoría de la Corte: consolida la jurisprudencia sobre práctica, valor probatorio y requisitos del dictamen pericial, y el alcance de la prohibición de condenar solo con prueba de referencia.",
+   "uso": "Metodología y sustentación del informe pericial; contradicción del perito.",
+   "url": "https://cortesuprema.gov.co/corte/?p=19484",
+   "tipos": [
+    "todos"
+   ],
+   "verificada": {
+    "fecha": "2026-10-27",
+    "fuente": "Relatoría de la Corte Suprema (cortesuprema.gov.co)",
+    "nota": "Fecha de la providencia y ponente no confirmados (la página trae la publicación, 31/07/2018). Los criterios concretos están en el PDF."
+   }
+  },
+  {
+   "id": "t-igac1059",
+   "clase": "Fuente técnica",
+   "cita": "IGAC, Resolución 1059 de 2022 (referencia de tu protocolo)",
+   "corporacion": "",
+   "tema": "Especificaciones cartográficas mínimas.",
+   "uso": "Topografía y planos.",
+   "url": "",
+   "tipos": [
+    "inmuebles",
+    "transito",
+    "gps",
+    "dron"
+   ],
+   "verificada": null
+  },
+  {
+   "id": "t-rac101",
+   "clase": "Fuente técnica",
+   "cita": "RAC 101 (Aerocivil), operación de UAS",
+   "corporacion": "",
+   "tema": "Operación de drones en Colombia.",
+   "uso": "Informes con dron: condiciones del vuelo.",
+   "url": "",
+   "tipos": [
+    "dron"
+   ],
+   "verificada": null
+  },
+  {
+   "id": "t-ntc4113",
+   "clase": "Fuente técnica",
+   "cita": "NTC 4113 (ICONTEC), levantamientos topográficos",
+   "corporacion": "",
+   "tema": "Precisión en levantamientos topográficos.",
+   "uso": "Metodología de medición.",
+   "url": "",
+   "tipos": [
+    "inmuebles",
+    "transito",
+    "gps"
+   ],
+   "verificada": null
+  },
+  {
+   "id": "t-res11268",
+   "clase": "Fuente técnica",
+   "cita": "Resolución 11268 de 2012 (IPAT)",
+   "corporacion": "",
+   "tema": "Formato de informe policial de accidente de tránsito.",
+   "uso": "Lectura y crítica del IPAT.",
+   "url": "",
+   "tipos": [
+    "transito"
+   ],
+   "verificada": null
+  },
+  {
+   "id": "t-cc-fgn",
+   "clase": "Fuente técnica",
+   "cita": "Manual del Sistema de Cadena de Custodia, FGN (v4, 2018)",
+   "corporacion": "",
+   "tema": "Procedimientos de cadena de custodia.",
+   "uso": "Auditoría de cadena de custodia.",
+   "url": "",
+   "tipos": [
+    "todos"
+   ],
+   "verificada": null
+  }
+ ]
+}
